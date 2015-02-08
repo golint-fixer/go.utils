@@ -1,0 +1,28 @@
+language: go
+go:
+- release
+- tip
+os:
+- linux
+- osx
+env:
+  global:
+  - GOBIN=${HOME}/bin
+  - PATH=${PATH}:${GOBIN}
+  - secure: N6fnHvFdR3NPGQHs5Y99t3+OKerPIe2MsduV3fX23U5YbkdaIK5buvGj8PUQq9oJYJLnJ1BMwnLHvdL95gxTYr0P3u34JcBDHGod2svFZE5Ac9939WlrlALRztz+zIeNJJhy3qTGlHS9TI7Q9IZd1KjSpr9X4E4SUKKuhoFZlQk=
+
+install:
+- mkdir -p ${HOME}/bin
+- go get golang.org/x/tools/cmd/vet
+- go get github.com/golang/lint/golint
+- go get golang.org/x/tools/cmd/cover
+- go get github.com/mattn/goveralls
+- go get github.com/modocache/gover
+script:
+- golint .
+- go vet ./...
+- go get -t ./...
+- go test -v -race ./...
+- go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -i sh -c {}
+- gover
+- goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken=$COVERALLS_TOKEN
