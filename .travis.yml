@@ -9,8 +9,7 @@ env:
   global:
   - GOBIN=${HOME}/bin
   - PATH=${PATH}:${GOBIN}
-  - secure: N6fnHvFdR3NPGQHs5Y99t3+OKerPIe2MsduV3fX23U5YbkdaIK5buvGj8PUQq9oJYJLnJ1BMwnLHvdL95gxTYr0P3u34JcBDHGod2svFZE5Ac9939WlrlALRztz+zIeNJJhy3qTGlHS9TI7Q9IZd1KjSpr9X4E4SUKKuhoFZlQk=
-
+  - secure: jAc18ZJrYE8Itf8QMyr9w9H/YJpO6CZOZ0ClCXZJc9EN96S2PB3Rikw6JlGse/GUi9UUKY9ToHNAM7MG3/ZSIFoZrPDVmQ3B/5f7/og0c9/5Ex9DRVEdtBQdWbZK3K5zzOgkGrlpEDdUxK2mY/7k7l+Ij3EfkBjikr9Hg2lgO1o=
 install:
 - mkdir -p ${HOME}/bin
 - go get golang.org/x/tools/cmd/vet
@@ -23,6 +22,7 @@ script:
 - go vet ./...
 - go get -t ./...
 - go test -v -race ./...
-- go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -i sh -c {}
+- go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile
+  {{.ImportPath}}"{{end}}' ./... | xargs -i sh -c {}
 - gover
 - goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken=$COVERALLS_TOKEN
