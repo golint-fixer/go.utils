@@ -7,6 +7,50 @@ import (
 	"testing"
 )
 
+func testCopyFile(src, dst string, isnil, rm, indir bool, i int, t *testing.T) {
+	var srcnt []byte
+	var err error
+	var srcfi os.FileInfo
+	if isnil {
+		if srcnt, err = ioutil.ReadFile(src); err != nil {
+			t.Errorf("want %v==nil (%d)", err, i)
+		}
+		if srcfi, err = os.Stat(src); err != nil {
+			t.Errorf("want %v==nil (%d)", err, i)
+		}
+	}
+	if err = CopyFile(dst, src); (err == nil) != isnil {
+		t.Errorf("want (%v==nil)==%t (%d)", err, isnil, i)
+	}
+	if err != nil {
+		return
+	}
+	dest := dst
+	if indir {
+		dest = filepath.Join(dst, filepath.Base(src))
+	}
+	checkfile(t, dest, srcnt, srcfi, i)
+	if rm {
+		os.Remove(dest)
+	}
+}
+
+func checkfile(t *testing.T, dest string, srcnt []byte,
+	srcfi os.FileInfo, i int) {
+	dstfi, err := os.Stat(dest)
+	if err != nil {
+		t.Errorf("want %v==nil (%d)", err, i)
+	}
+	if d, s := dstfi.Mode(), srcfi.Mode(); d != s {
+		t.Errorf("want %d=%d (%d)", d, s, i)
+	}
+	dstcnt, err := ioutil.ReadFile(dest)
+	if err != nil || string(srcnt) != string(dstcnt) {
+		t.Errorf("want %v==nil && %q=%q (%d)",
+			string(srcnt), string(dstcnt), err, i)
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	cases := []struct {
 		src   string
@@ -22,47 +66,7 @@ func TestCopyFile(t *testing.T) {
 		{os.Args[0], ".", true, true, true},
 	}
 	for i, cas := range cases {
-		var srcnt []byte
-		var err error
-		if cas.isnil {
-			if srcnt, err = ioutil.ReadFile(cas.src); err != nil {
-				t.Errorf("want %v==nil (%d)", err, i)
-			}
-		}
-		var srcfi os.FileInfo
-		if cas.isnil {
-			if srcfi, err = os.Stat(cas.src); err != nil {
-				t.Errorf("want %v==nil (%d)", err, i)
-			}
-		}
-		err = CopyFile(cas.dst, cas.src)
-		if (err == nil) != cas.isnil {
-			t.Errorf("want (%v==nil)==%t (%d)", err, cas.isnil, i)
-		}
-		if err != nil {
-			continue
-		}
-		dst := cas.dst
-		if cas.indir {
-			dst = filepath.Join(cas.dst, filepath.Base(cas.src))
-		}
-		dstfi, err := os.Stat(dst)
-		if err != nil {
-			t.Errorf("want %v==nil (%d)", err, i)
-		}
-		if d, s := dstfi.Mode(), srcfi.Mode(); d != s {
-			t.Errorf("want %d=%d (%d)", d, s, i)
-		}
-		dstcnt, err := ioutil.ReadFile(dst)
-		if err != nil {
-			t.Errorf("want %v==nil (%d)", err, i)
-		}
-		if string(srcnt) != string(dstcnt) {
-			t.Errorf("want %q=%q (%d)", string(srcnt), string(dstcnt), i)
-		}
-		if cas.rm {
-			os.Remove(dst)
-		}
+		testCopyFile(cas.src, cas.dst, cas.isnil, cas.rm, cas.indir, i, t)
 	}
 }
 

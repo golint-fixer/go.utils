@@ -1,10 +1,8 @@
 language: go
 go:
-- release
-- tip
+- 1.4.2
 os:
 - linux
-- osx
 env:
   global:
   - GOBIN=${HOME}/bin
@@ -17,10 +15,13 @@ install:
 - go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
 - go get github.com/modocache/gover
+- go get github.com/fzipp/gocyclo
 script:
 - golint .
 - go vet ./...
+- gocyclo -over 10 .
 - go get -t ./...
+- go build ./...
 - go test -v -race ./...
 - go list -f '{{if len .TestGoFiles}}"go test -coverprofile={{.Dir}}/.coverprofile
   {{.ImportPath}}"{{end}}' ./... | xargs -i sh -c {}
