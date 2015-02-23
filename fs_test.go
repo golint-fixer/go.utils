@@ -64,6 +64,7 @@ func TestCopyFile(t *testing.T) {
 		{"not_exit", "temp_file", false, false, false},
 		{os.Args[0], "", false, false, false},
 		{os.Args[0], ".", true, true, true},
+		{filepath.Dir(os.Args[0]), "t", false, false, false},
 	}
 	for i, cas := range cases {
 		testCopyFile(cas.src, cas.dst, cas.isnil, cas.rm, cas.indir, i, t)
