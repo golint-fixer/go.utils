@@ -1,15 +1,17 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// CopyFile copies `src` into `dst`. It preserves permissions of `src`.
-// If `dst` is a directory, it copies `src` to this directory with source's
-// filename. If `dst` points at `src`, no action is performed.
+// CopyFile copies src into dst. It preserves permissions of src.
+// If dst is a directory, it copies src to this directory with source's
+// filename. If dst points at src, no action is performed.
 func CopyFile(dst, src string) error {
 	if ok, err := IsTheSame(dst, src); err != nil {
 		return err
@@ -74,7 +76,46 @@ func dstfix(dst, src string) (string, error) {
 	}
 }
 
-// Exists returns a boolean indicating if `path` points to existing file/dir.
+func isdir(path string) error {
+	switch ok, err := IsDir(path); {
+	case err != nil:
+		return err
+	case !ok:
+		return fmt.Errorf("utils: %q is not a directory", path)
+	}
+	return nil
+}
+
+// CopyDir copies recursively src directory to dst directory.
+func CopyDir(dst, src string) error {
+	dst, src = filepath.Clean(dst), filepath.Clean(src)
+	ok, err := IsTheSame(dst, src)
+	switch {
+	case err != nil:
+		return err
+	case ok:
+		return nil
+	}
+	for _, p := range []string{src, dst} {
+		if err = isdir(p); err != nil {
+			return err
+		}
+	}
+	var dest string
+	return filepath.Walk(src,
+		func(path string, fi os.FileInfo, err error) error {
+			dest = strings.Replace(path, src, dst, 1)
+			if fi.IsDir() {
+				if err = os.MkdirAll(dest, fi.Mode()); err != nil {
+					return err
+				}
+				return nil
+			}
+			return CopyFile(dest, path)
+		})
+}
+
+// Exists returns a boolean indicating if path points to existing file/dir.
 func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -83,7 +124,7 @@ func Exists(path string) (bool, error) {
 	return true, err
 }
 
-// IsDir returns a boolean indicating if `path` points to a directory.
+// IsDir returns a boolean indicating if path points to a directory.
 func IsDir(path string) (bool, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -92,7 +133,7 @@ func IsDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-// IsTheSame returns a boolean indicating if `lf` and `rf` points at the same
+// IsTheSame returns a boolean indicating if lf and rf points at the same
 // file/dir without verifying if it really exists.
 func IsTheSame(lf, rf string) (ok bool, err error) {
 	if lf == rf {
