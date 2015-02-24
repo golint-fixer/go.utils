@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -140,4 +141,75 @@ func TestIsTheSame(t *testing.T) {
 			t.Errorf("want %t==%t for %q and %q (%d)", ok, cas.ok, cas.lf, cas.rf, i)
 		}
 	}
+}
+
+func TestCopyDirShort(t *testing.T) {
+	cases := []struct {
+		src   string
+		dst   string
+		isnil bool
+	}{
+		{os.Args[0], filepath.Dir(os.Args[0]), false},
+		{filepath.Dir(os.Args[0]), os.Args[0], false},
+		{filepath.Dir(os.Args[0]), filepath.Dir(os.Args[0]), true},
+		{"not_exit", os.Args[0], false},
+		{filepath.Dir(os.Args[0]), "not_exist", false},
+	}
+	for i, cas := range cases {
+		if err := CopyDir(cas.dst, cas.src); (err == nil) != cas.isnil {
+			t.Errorf("want (err=nil)==cas.isnil; err: %v, cas.isnil: %t (%d)",
+				err, cas.isnil, i)
+		}
+	}
+}
+
+func TestCopyDir(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "goutils")
+	if err != nil {
+		t.Fatalf("want err==nil; err: %q", err)
+	}
+	defer os.RemoveAll(tmp)
+	dirs := []string{
+		filepath.Join("p1", "p2", "p3"),
+		filepath.Join("p1", "wlazl", "kotek"),
+		filepath.Join("na", "plotek"),
+		filepath.Join("p1", "wlazl", "zaba"),
+	}
+	for _, dir := range dirs {
+		if err = os.MkdirAll(filepath.Join(tmp, dir), 0700); err != nil {
+			t.Fatalf("want err==nil; err: %q", err)
+		}
+	}
+	if err = filepath.Walk(tmp, func(path string, fi os.FileInfo, err error) error {
+		if !fi.IsDir() {
+			return nil
+		}
+		return CopyFile(filepath.Join(path, filepath.Base(os.Args[0])), os.Args[0])
+	}); err != nil {
+		t.Fatalf("want err==nil; err: %q", err)
+	}
+	tmpdst, err := ioutil.TempDir("", "goutils")
+	if err != nil {
+		t.Fatalf("want err=nil; err %q", err)
+	}
+	defer os.RemoveAll(tmpdst)
+	if err = CopyDir(tmpdst, tmp); err != nil {
+		t.Fatalf("want err=nil; err: %q", err)
+	}
+	walk(tmp, tmpdst, t)
+	walk(tmpdst, tmp, t)
+}
+
+func walk(pth, pth2 string, t *testing.T) error {
+	return filepath.Walk(pth, func(path string, fi os.FileInfo, err error) error {
+		dstfi, err := os.Stat(strings.Replace(path, pth, pth2, 1))
+		if err != nil {
+			t.Fatalf("want err=nil; %v", err)
+		}
+		if dstfi.IsDir() != fi.IsDir() {
+			t.Fatalf("want dstfi.IsDir()==fi.IsDir(); %t!=%t for %q",
+				dstfi.IsDir(), fi.IsDir(), path)
+		}
+		return nil
+	})
 }
