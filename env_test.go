@@ -92,10 +92,10 @@ func TestPrependPathEnvs(t *testing.T) {
 		isnil bool
 	}{
 		{
-			envs:  []string{"u=", "a=c"},
+			envs:  []string{"=:C=s", "u=", "a=c"},
 			name:  "a",
 			args:  []string{"j", "z"},
-			res:   []string{"u=", "a=j" + pls + "z" + pls + "c"},
+			res:   []string{"=:C=s", "u=", "a=j" + pls + "z" + pls + "c"},
 			isnil: true,
 		},
 		{

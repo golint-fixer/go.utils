@@ -59,6 +59,10 @@ type singleproc func(string, ...string) string
 func pp(pr singleproc, env *[]string, name string, v ...string) (err error) {
 	var sp []string
 	for i, p := range *env {
+		// http://blogs.msdn.com/b/oldnewthing/archive/2010/05/06/10008132.aspx
+		if strings.Index(p, "=") == 0 {
+			continue
+		}
 		if sp, err = envsplit(p); err != nil {
 			return
 		}
